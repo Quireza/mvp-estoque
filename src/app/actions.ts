@@ -1,9 +1,8 @@
-'use server'
-
 import { prisma } from '@/lib/prisma';
 import { InventoryService } from '@/services/inventory.service';
 import { ShopifyService } from '@/services/shopify.service';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 // Fetch all products
 export async function getProducts() {
@@ -247,4 +246,13 @@ export async function registerStockEntryAction(formData: FormData) {
   } catch (err: any) {
     return { success: false, error: err.message || "Erro ao registrar entrada." };
   }
+}
+
+// Authentication
+export async function loginAction(user: string, pass: string) {
+  if (user === 'admin' && pass === 'admin123') {
+    cookies().set('mvp_auth_token', 'logged_in', { maxAge: 60 * 60 * 24 * 30, path: '/' }); // 30 days
+    return { success: true };
+  }
+  return { success: false };
 }
