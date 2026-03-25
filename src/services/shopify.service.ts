@@ -129,22 +129,8 @@ export class ShopifyService {
     }
 
     try {
-      const mutation = `
-        mutation productCreate($input: ProductInput!) {
-          productCreate(input: $input) {
-            product {
-              id
-            }
-            userErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      const variables = {
-        input: {
+      const payload = {
+        product: {
           title: data.name,
           vendor: "Estoque Local",
           variants: [
@@ -156,27 +142,28 @@ export class ShopifyService {
         }
       };
 
-      const res = await fetch(`https://${domain}/admin/api/2024-01/graphql.json`, {
+      const res = await fetch(`https://${domain}/admin/api/2024-01/products.json`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Shopify-Access-Token': token,
         },
-        body: JSON.stringify({ query: mutation, variables })
+        body: JSON.stringify(payload)
       });
 
       const responseData = await res.json();
       
-      // Checa erro de autenticação / token inválido
-      if (responseData.errors) {
-         console.error("Erro fatal do GraphQL:", responseData.errors);
-         return { success: false, error: responseData.errors[0]?.message || "Token inválido ou sem permissão de 'write_products'" };
+      // Checa erro de requisição HTTP
+      if (!res.ok) {
+        console.error("Erro da Shopify REST API:", responseData);
+        return { 
+          success: false, 
+          error: responseData.errors 
+            ? JSON.stringify(responseData.errors) 
+            : "Erro desconhecido ao criar na Shopify" 
+        };
       }
 
-      if (responseData?.data?.productCreate?.userErrors?.length > 0) {
-        console.error("Erro ao criar produto na Shopify:", responseData.data.productCreate.userErrors);
-        return { success: false, error: responseData.data.productCreate.userErrors[0].message };
-      }
       return { success: true };
     } catch (err: any) {
       console.error("Erro na comunicação para criar produto:", err);
