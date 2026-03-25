@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// CADASTRO DE PRODUTOS
+// -------------------------------------------------------------
+model Product {
+  id          String   @id @default(uuid())
+  sku         String   @unique
+  name        String
+  costPrice   Float    @map("cost_price")
+  salePrice   Float    @map("sale_price")
+  minStock    Int      @map("min_stock") // Ponto de pedido
+  
+  batches     Batch[]
+  movements   StockMovement[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+// -------------------------------------------------------------
+// GESTÃO DE LOTES (CONTROLE DE VALIDADE)
+// -------------------------------------------------------------
+model Batch {
+  id             String   @id @default(uuid())
+  productId      String   @map("product_id")
+  batchNumber    String   @map("batch_number")
+  expirationDate DateTime @map("expiration_date")
+  quantity       Int      
+  
+  product        Product  @relation(fields: [productId], references: [id])
+  movementItems  StockMovementItem[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([productId, batchNumber])
+  @@map("batches")
+}
+
+// -------------------------------------------------------------
+// MOVIMENTAÇÕES BÁSICAS
+// -------------------------------------------------------------
+model StockMovement {
+  id          String         @id @default(uuid())
+  productId   String         @map("product_id")
+  type        String         // "IN" ou "OUT" - SQLite não tem enum nativo
+  quantity    Int
+  notes       String?
+  
+  product     Product        @relation(fields: [productId], references: [id])
+  items       StockMovementItem[]
+
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  @@map("stock_movements")
+}
+
+// -------------------------------------------------------------
+// RASTREABILIDADE
+// -------------------------------------------------------------
+model StockMovementItem {
+  id              String        @id @default(uuid())
+  stockMovementId String        @map("stock_movement_id")
+  batchId         String        @map("batch_id")
+  quantity        Int
+
+  stockMovement   StockMovement @relation(fields: [stockMovementId], references: [id])
+  batch           Batch         @relation(fields: [batchId], references: [id])
+
+  @@map("stock_movement_items")
+}
