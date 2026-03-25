@@ -168,7 +168,8 @@ export class ShopifyService {
             {
               sku: data.sku,
               price: data.price.toString(),
-              inventory_management: "shopify"
+              inventory_management: "shopify",
+              inventory_policy: "deny"
             }
           ]
         }

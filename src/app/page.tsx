@@ -126,33 +126,68 @@ export default async function Dashboard() {
           </div>
         </div>
 
-        {/* Produtos com Estoque Baixo */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 flex flex-col">
-          <div className="p-6 border-b border-stone-100">
-            <h2 className="text-lg font-bold text-stone-900">Ponto de Pedido</h2>
-            <p className="text-xs text-stone-500 mt-1">Produtos abaixo do limite mínimo</p>
+        {/* Painel Lateral Direto com Alertas de Estoque */}
+        <div className="flex flex-col gap-8">
+          
+          {/* Risco de Ruptura (Overselling) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-red-200 flex flex-col">
+            <div className="p-6 border-b border-red-100 bg-red-50/50 rounded-t-2xl flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-red-800">Risco Overselling</h2>
+                <p className="text-xs text-red-600 mt-1">Esgotado ou c/ 1 unidade</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 animate-pulse">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              </div>
+            </div>
+            <div className="p-6 flex-1 flex flex-col gap-4">
+              {products.filter(p => p.totalQuantity <= 1).length === 0 && (
+                <div className="text-center text-stone-500 text-sm mt-4">
+                  Nenhum produto em risco imediato.
+                </div>
+              )}
+              {products.filter(p => p.totalQuantity <= 1).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-red-200 bg-red-50">
+                  <div>
+                    <h4 className="font-bold text-red-900 text-sm">{p.name}</h4>
+                    <p className="text-xs text-red-700 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">Venda bloqueada</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-red-700 font-extrabold text-lg">{p.totalQuantity} <span className="text-xs font-normal">un</span></p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="p-6 flex-1 flex flex-col gap-4">
-            
-            {products.filter(p => p.isLowStock).length === 0 && (
-              <div className="text-center text-stone-500 text-sm mt-4">
-                Nenhum produto com estoque crítico.
-              </div>
-            )}
-            
-            {products.filter(p => p.isLowStock).map(p => (
-              <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-red-100 bg-red-50/30">
-                <div>
-                  <h4 className="font-medium text-stone-900 text-sm">{p.name}</h4>
-                  <p className="text-xs text-stone-500">Min: {p.minStock} un</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-red-600 font-bold">{p.totalQuantity} un</p>
-                </div>
-              </div>
-            ))}
 
-            <ExportPurchaseButton lowStockProducts={products.filter(p => p.isLowStock)} />
+          {/* Produtos com Estoque Baixo */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-100 flex flex-col">
+            <div className="p-6 border-b border-stone-100">
+              <h2 className="text-lg font-bold text-stone-900">Ponto de Pedido</h2>
+              <p className="text-xs text-stone-500 mt-1">Produtos abaixo do limite mínimo</p>
+            </div>
+            <div className="p-6 flex-1 flex flex-col gap-4">
+              
+              {products.filter(p => p.isLowStock && p.totalQuantity > 1).length === 0 && (
+                <div className="text-center text-stone-500 text-sm mt-4">
+                  Nenhum produto precisando de compra.
+                </div>
+              )}
+              
+              {products.filter(p => p.isLowStock && p.totalQuantity > 1).map(p => (
+                <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-orange-100 bg-orange-50/30">
+                  <div>
+                    <h4 className="font-medium text-stone-900 text-sm">{p.name}</h4>
+                    <p className="text-xs text-stone-500">Min: {p.minStock} un</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-orange-600 font-bold">{p.totalQuantity} un</p>
+                  </div>
+                </div>
+              ))}
+
+              <ExportPurchaseButton lowStockProducts={products.filter(p => p.isLowStock)} />
+            </div>
           </div>
         </div>
       </div>

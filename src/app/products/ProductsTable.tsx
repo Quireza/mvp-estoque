@@ -142,9 +142,14 @@ export default function ProductsTable({ initialProducts }: { initialProducts: an
                   <td className="p-4 font-bold text-stone-800">{product.totalQuantity} un</td>
                   <td className="p-4 text-stone-500">{product.minStock} un</td>
                   <td className="p-4">
-                    {product.isLowStock ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                    {product.totalQuantity <= 1 ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300 animate-pulse transition-all">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                        RISCO RUPTURA
+                      </span>
+                    ) : product.isLowStock ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                         Estoque Baixo
                       </span>
                     ) : (
