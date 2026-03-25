@@ -158,7 +158,7 @@ export async function updateProductAction(id: string, formData: FormData) {
 }
 
 // Sync to Shopify
-export async function syncProductToShopifyAction(productId: string) {
+export async function syncProductToShopifyAction(productId: string): Promise<{ success: boolean; error?: string; warning?: string }> {
   try {
     const product = await prisma.product.findUnique({ 
       where: { id: productId },
