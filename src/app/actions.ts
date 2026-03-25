@@ -1,3 +1,5 @@
+'use server';
+
 import { prisma } from '@/lib/prisma';
 import { InventoryService } from '@/services/inventory.service';
 import { ShopifyService } from '@/services/shopify.service';
