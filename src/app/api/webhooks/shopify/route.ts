@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ShopifyService } from '@/services/shopify.service';
 import { InventoryService } from '@/services/inventory.service';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,8 +22,37 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = JSON.parse(rawBody);
+    const topic = req.headers.get('x-shopify-topic');
 
-    // O payload do webhook "orders/create" contém line_items
+    // 1. Tratamento para Criação de Produto (Inbound)
+    if (topic === 'products/create' || topic === 'products/update') {
+      const title = payload.title;
+      const variants = payload.variants;
+      
+      if (variants && variants.length > 0) {
+        const sku = variants[0].sku;
+        const price = parseFloat(variants[0].price || "0");
+        
+        if (sku) {
+           const existing = await prisma.product.findUnique({ where: { sku } });
+           if (!existing) {
+             await prisma.product.create({
+               data: { 
+                 name: title, 
+                 sku, 
+                 salePrice: price, 
+                 costPrice: 0, 
+                 minStock: 10 
+               }
+             });
+             console.log(`[Shopify Webhook] Produto Inbound importado: ${sku}`);
+           }
+        }
+      }
+      return NextResponse.json({ message: 'Produto processado' }, { status: 200 });
+    }
+
+    // 2. Tratamento Padrão para Pedidos (Outbound/Baixa)
     if (payload.line_items && Array.isArray(payload.line_items)) {
       for (const item of payload.line_items) {
         const sku = item.sku;

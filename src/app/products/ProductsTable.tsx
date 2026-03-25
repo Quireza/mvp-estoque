@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { syncProductToShopifyAction } from '@/app/actions';
+import { toast } from 'sonner';
 
 export default function ProductsTable({ initialProducts }: { initialProducts: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isPending, startTransition] = useTransition();
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
 
   // 1. Filter
@@ -41,6 +44,18 @@ export default function ProductsTable({ initialProducts }: { initialProducts: an
   const getSortIndicator = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) return '↕';
     return sortConfig.direction === 'asc' ? '↑' : '↓';
+  };
+
+  const handleSyncShopify = (productId: string) => {
+    startTransition(async () => {
+      const toastId = toast.loading('Sincronizando com a Shopify...');
+      const res = await syncProductToShopifyAction(productId);
+      if (res.success) {
+        toast.success('Produto criado na Shopify!', { id: toastId });
+      } else {
+        toast.error(`Erro: ${res.error}`, { id: toastId });
+      }
+    });
   };
 
   return (
@@ -135,9 +150,19 @@ export default function ProductsTable({ initialProducts }: { initialProducts: an
                     )}
                   </td>
                   <td className="p-4 text-right pr-6">
-                    <Link href={`/products/${product.id}/edit`} className="inline-flex items-center justify-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium rounded-lg transition-colors">
-                      Editar
-                    </Link>
+                    <div className="flex items-center justify-end gap-2">
+                       <button 
+                         onClick={() => handleSyncShopify(product.id)}
+                         disabled={isPending}
+                         className="inline-flex items-center justify-center px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-50 border border-emerald-200 text-sm font-medium rounded-lg transition-colors"
+                         title="Enviar produto para a loja virtual Shopify"
+                       >
+                         {isPending ? 'Enviando...' : 'Sync Shopify'}
+                       </button>
+                       <Link href={`/products/${product.id}/edit`} className="inline-flex items-center justify-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium rounded-lg transition-colors">
+                         Editar
+                       </Link>
+                    </div>
                   </td>
                 </tr>
               ))}

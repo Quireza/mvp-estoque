@@ -115,4 +115,66 @@ export class ShopifyService {
       return false;
     }
   }
+
+  /**
+   * Cria um novo produto na Shopify (Outbound)
+   */
+  static async createProduct(data: { name: string, sku: string, price: number }) {
+    const domain = process.env.SHOPIFY_STORE_DOMAIN;
+    const token = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+
+    if (!domain || !token) {
+      console.warn("Credenciais do Shopify não configuradas. Ignorando criação.");
+      return false;
+    }
+
+    try {
+      const mutation = `
+        mutation productCreate($input: ProductInput!) {
+          productCreate(input: $input) {
+            product {
+              id
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        input: {
+          title: data.name,
+          vendor: "Estoque Local",
+          variants: [
+            {
+              sku: data.sku,
+              price: data.price.toString()
+            }
+          ]
+        }
+      };
+
+      const res = await fetch(`https://${domain}/admin/api/2024-01/graphql.json`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': token,
+        },
+        body: JSON.stringify({ query: mutation, variables })
+      });
+
+      const responseData = await res.json();
+      
+      if (responseData?.data?.productCreate?.userErrors?.length > 0) {
+        console.error("Erro ao criar produto na Shopify:", responseData.data.productCreate.userErrors);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Erro na comunicação para criar produto:", err);
+      return false;
+    }
+  }
 }

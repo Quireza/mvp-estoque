@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { InventoryService } from '@/services/inventory.service';
+import { ShopifyService } from '@/services/shopify.service';
 import { revalidatePath } from 'next/cache';
 
 // Fetch all products
@@ -153,6 +154,25 @@ export async function updateProductAction(id: string, formData: FormData) {
     return { success: true };
   } catch (err: any) {
     return { success: false, error: "Erro ao atualizar produto." };
+  }
+}
+
+// Sync to Shopify
+export async function syncProductToShopifyAction(productId: string) {
+  try {
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) return { success: false, error: 'Produto não encontrado.' };
+    
+    const result = await ShopifyService.createProduct({
+      name: product.name,
+      sku: product.sku,
+      price: product.salePrice
+    });
+
+    if (!result) return { success: false, error: 'Falha ao conectar à Shopify.' };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Erro desconhecido.' };
   }
 }
 
