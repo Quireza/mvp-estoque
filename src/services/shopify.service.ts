@@ -125,7 +125,7 @@ export class ShopifyService {
 
     if (!domain || !token) {
       console.warn("Credenciais do Shopify não configuradas. Ignorando criação.");
-      return false;
+      return { success: false, error: "Credenciais de API não configuradas na Vercel (.env)" };
     }
 
     try {
@@ -167,14 +167,20 @@ export class ShopifyService {
 
       const responseData = await res.json();
       
+      // Checa erro de autenticação / token inválido
+      if (responseData.errors) {
+         console.error("Erro fatal do GraphQL:", responseData.errors);
+         return { success: false, error: responseData.errors[0]?.message || "Token inválido ou sem permissão de 'write_products'" };
+      }
+
       if (responseData?.data?.productCreate?.userErrors?.length > 0) {
         console.error("Erro ao criar produto na Shopify:", responseData.data.productCreate.userErrors);
-        return false;
+        return { success: false, error: responseData.data.productCreate.userErrors[0].message };
       }
-      return true;
-    } catch (err) {
+      return { success: true };
+    } catch (err: any) {
       console.error("Erro na comunicação para criar produto:", err);
-      return false;
+      return { success: false, error: err.message || "Erro de rede ao conectar com Shopify" };
     }
   }
 }

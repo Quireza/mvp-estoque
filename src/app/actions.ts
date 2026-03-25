@@ -161,7 +161,7 @@ export async function updateProductAction(id: string, formData: FormData) {
 export async function syncProductToShopifyAction(productId: string) {
   try {
     const product = await prisma.product.findUnique({ where: { id: productId } });
-    if (!product) return { success: false, error: 'Produto não encontrado.' };
+    if (!product) return { success: false, error: 'Produto não encontrado localmente.' };
     
     const result = await ShopifyService.createProduct({
       name: product.name,
@@ -169,10 +169,10 @@ export async function syncProductToShopifyAction(productId: string) {
       price: product.salePrice
     });
 
-    if (!result) return { success: false, error: 'Falha ao conectar à Shopify.' };
+    if (!result.success) return { success: false, error: result.error || 'Falha na conexão com a loja.' };
     return { success: true };
-  } catch (err) {
-    return { success: false, error: 'Erro desconhecido.' };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Erro desconhecido.' };
   }
 }
 
