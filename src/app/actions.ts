@@ -251,7 +251,7 @@ export async function registerStockEntryAction(formData: FormData) {
 // Authentication
 export async function loginAction(user: string, pass: string) {
   if (user === 'admin' && pass === 'admin123') {
-    cookies().set('mvp_auth_token', 'logged_in', { maxAge: 60 * 60 * 24 * 30, path: '/' }); // 30 days
+    (await cookies()).set('mvp_auth_token', 'logged_in', { maxAge: 60 * 60 * 24 * 30, path: '/' }); // 30 days
     return { success: true };
   }
   return { success: false };
