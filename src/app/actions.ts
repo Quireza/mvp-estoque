@@ -160,7 +160,10 @@ export async function updateProductAction(id: string, formData: FormData) {
 // Sync to Shopify
 export async function syncProductToShopifyAction(productId: string) {
   try {
-    const product = await prisma.product.findUnique({ where: { id: productId } });
+    const product = await prisma.product.findUnique({ 
+      where: { id: productId },
+      include: { batches: { where: { quantity: { gt: 0 } } } }
+    });
     if (!product) return { success: false, error: 'Produto não encontrado localmente.' };
     
     const result = await ShopifyService.createProduct({
@@ -170,6 +173,14 @@ export async function syncProductToShopifyAction(productId: string) {
     });
 
     if (!result.success) return { success: false, error: result.error || 'Falha na conexão com a loja.' };
+    
+    // Calcula saldo total e sincroniza o saldo inicial na loja
+    const totalQuantity = product.batches.reduce((sum, batch) => sum + batch.quantity, 0);
+    if (totalQuantity > 0) {
+      // Delay it mildly just in case Shopify needs a sec to index the new variant
+      await ShopifyService.adjustInventory(product.sku, totalQuantity);
+    }
+
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Erro desconhecido.' };

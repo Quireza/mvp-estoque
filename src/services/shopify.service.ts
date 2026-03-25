@@ -136,7 +136,8 @@ export class ShopifyService {
           variants: [
             {
               sku: data.sku,
-              price: data.price.toString()
+              price: data.price.toString(),
+              inventory_management: "shopify"
             }
           ]
         }
