@@ -14,10 +14,15 @@ model Product {
   id          String   @id @default(uuid())
   sku         String   @unique
   name        String
-  costPrice   Float    @map("cost_price")
-  salePrice   Float    @map("sale_price")
-  minStock    Int      @map("min_stock") // Ponto de pedido
+  costPrice      Float    @map("cost_price")
+  salePrice      Float    @map("sale_price")
+  minStock       Int      @map("min_stock") // Ponto de pedido
   
+  // Tax & Financial Metrics
+  icms           Float    @default(0)
+  icmsComplement Float    @default(0) @map("icms_complement")
+  extraCosts     Float    @default(0) @map("extra_costs")
+
   batches     Batch[]
   movements   StockMovement[]
 

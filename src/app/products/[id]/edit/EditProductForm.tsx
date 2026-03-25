@@ -10,6 +10,17 @@ export default function EditProductForm({ product }: { product: any }) {
   const [isPending, startTransition] = useTransition();
   const [errorLine, setErrorLine] = useState('');
 
+  // Financial States
+  const [costPrice, setCostPrice] = useState<number>(product.costPrice || 0);
+  const [salePrice, setSalePrice] = useState<number>(product.salePrice || 0);
+  const [icms, setIcms] = useState<number>(product.icms || 0);
+  const [icmsComplement, setIcmsComplement] = useState<number>(product.icmsComplement || 0);
+  const [extraCosts, setExtraCosts] = useState<number>(product.extraCosts || 0);
+
+  const effectiveCost = costPrice + (costPrice * (icms / 100)) + (costPrice * (icmsComplement / 100)) + extraCosts;
+  const profitMargin = salePrice > 0 ? ((salePrice - effectiveCost) / salePrice) * 100 : 0;
+  const profitValue = salePrice - effectiveCost;
+
   async function handleSubmit(formData: FormData) {
     startTransition(async () => {
       setErrorLine('');
@@ -63,7 +74,8 @@ export default function EditProductForm({ product }: { product: any }) {
               type="number" 
               step="0.01"
               min="0"
-              defaultValue={product.costPrice}
+              value={costPrice || ''}
+              onChange={(e) => setCostPrice(parseFloat(e.target.value) || 0)}
               required
               className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
@@ -75,10 +87,68 @@ export default function EditProductForm({ product }: { product: any }) {
               type="number" 
               step="0.01"
               min="0"
-              defaultValue={product.salePrice}
+              value={salePrice || ''}
+              onChange={(e) => setSalePrice(parseFloat(e.target.value) || 0)}
               required
               className="w-full px-4 py-3 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
+          </div>
+        </div>
+
+        <div className="bg-stone-50 border border-stone-100 p-4 rounded-xl space-y-4">
+          <h3 className="text-sm font-bold text-stone-800">Tributação e Custos Operacionais</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-stone-500 mb-1">ICMS Padrão (%)</label>
+              <input 
+                name="icms" 
+                type="number" 
+                step="0.01"
+                min="0"
+                value={icms || ''}
+                onChange={(e) => setIcms(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone-500 mb-1">ICMS Complementar (%)</label>
+              <input 
+                name="icmsComplement" 
+                type="number" 
+                step="0.01"
+                min="0"
+                value={icmsComplement || ''}
+                onChange={(e) => setIcmsComplement(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone-500 mb-1">Frete / Custo Extra (R$)</label>
+              <input 
+                name="extraCosts" 
+                type="number" 
+                step="0.01"
+                min="0"
+                value={extraCosts || ''}
+                onChange={(e) => setExtraCosts(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-lg flex items-center justify-between border ${profitMargin < 0 ? 'bg-red-50 border-red-200' : profitMargin < 15 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+             <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">Custo Efetivo Final</p>
+                <p className="text-xl font-bold text-stone-900">
+                  R$ {effectiveCost.toFixed(2)}
+                </p>
+             </div>
+             <div className="text-right">
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">Lucro e Margem Reais</p>
+                <p className={`text-xl font-bold ${profitMargin < 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                  R$ {profitValue.toFixed(2)} ({profitMargin.toFixed(1)}%)
+                </p>
+             </div>
           </div>
         </div>
 

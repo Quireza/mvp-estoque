@@ -107,6 +107,10 @@ export async function createProductAction(formData: FormData) {
   const costPrice = parseFloat(formData.get('costPrice') as string);
   const salePrice = parseFloat(formData.get('salePrice') as string);
   const minStock = parseInt(formData.get('minStock') as string, 10);
+  
+  const icms = parseFloat(formData.get('icms') as string) || 0;
+  const icmsComplement = parseFloat(formData.get('icmsComplement') as string) || 0;
+  const extraCosts = parseFloat(formData.get('extraCosts') as string) || 0;
 
   if (!sku || sku.trim() === '') {
     sku = 'SKU-' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -118,7 +122,7 @@ export async function createProductAction(formData: FormData) {
 
   try {
     await prisma.product.create({
-      data: { name, sku, costPrice, salePrice, minStock }
+      data: { name, sku, costPrice, salePrice, minStock, icms, icmsComplement, extraCosts }
     });
     revalidatePath('/products');
     revalidatePath('/');
@@ -141,6 +145,10 @@ export async function updateProductAction(id: string, formData: FormData) {
   const salePrice = parseFloat(formData.get('salePrice') as string);
   const minStock = parseInt(formData.get('minStock') as string, 10);
 
+  const icms = parseFloat(formData.get('icms') as string) || 0;
+  const icmsComplement = parseFloat(formData.get('icmsComplement') as string) || 0;
+  const extraCosts = parseFloat(formData.get('extraCosts') as string) || 0;
+
   if (!name || isNaN(costPrice) || isNaN(salePrice) || isNaN(minStock)) {
     return { success: false, error: "Preencha todos os campos obrigatórios corretamente." };
   }
@@ -148,7 +156,7 @@ export async function updateProductAction(id: string, formData: FormData) {
   try {
     await prisma.product.update({
       where: { id },
-      data: { name, sku, costPrice, salePrice, minStock }
+      data: { name, sku, costPrice, salePrice, minStock, icms, icmsComplement, extraCosts }
     });
     revalidatePath('/products');
     revalidatePath('/');

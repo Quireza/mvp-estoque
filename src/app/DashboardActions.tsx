@@ -4,16 +4,29 @@ import { toast } from 'sonner';
 export function ExportAllButton({ allProducts }: { allProducts: any[] }) {
   const handleExportAll = () => {
     const rows = [
-      ["SKU", "Nome", "Custo", "Preço Venda", "Estoque Atual", "Minimo", "Status"].join(","),
-      ...allProducts.map(p => [
-        p.sku, 
-        p.name, 
-        p.costPrice, 
-        p.salePrice, 
-        p.totalQuantity, 
-        p.minStock, 
-        p.isLowStock ? 'Baixo' : 'Adequado'
-      ].join(","))
+      ["SKU", "Nome", "Custo Base", "Custo Efetivo", "Preço Venda", "Margem Lucro (%)", "Estoque Atual", "Minimo", "Status"].join(","),
+      ...allProducts.map(p => {
+        const costPrice = p.costPrice || 0;
+        const icms = p.icms || 0;
+        const icmsComplement = p.icmsComplement || 0;
+        const extraCosts = p.extraCosts || 0;
+        const salePrice = p.salePrice || 0;
+
+        const effectiveCost = costPrice + (costPrice * (icms / 100)) + (costPrice * (icmsComplement / 100)) + extraCosts;
+        const profitMargin = salePrice > 0 ? ((salePrice - effectiveCost) / salePrice) * 100 : 0;
+
+        return [
+          p.sku, 
+          p.name, 
+          costPrice.toFixed(2),
+          effectiveCost.toFixed(2),
+          salePrice.toFixed(2),
+          Math.round(profitMargin) + "%",
+          p.totalQuantity, 
+          p.minStock, 
+          p.isLowStock ? 'Baixo' : 'Adequado'
+        ].join(",");
+      })
     ];
     
     const csvContent = "\uFEFF" + rows.join("\n");
