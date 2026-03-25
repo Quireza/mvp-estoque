@@ -69,7 +69,8 @@ export class ShopifyService {
         return false;
       }
 
-      return await this.adjustInventoryByItemId(inventoryItemIdGid, adjustQuantity);
+      const adjustRes = await this.adjustInventoryByItemId(inventoryItemIdGid, adjustQuantity);
+      return adjustRes.success;
     } catch (error) {
       console.error("Erro na comunicação com Shopify API:", error);
       return false;
@@ -84,7 +85,9 @@ export class ShopifyService {
     const token = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
     const locationId = process.env.SHOPIFY_LOCATION_ID;
 
-    if (!domain || !token || !locationId) return false;
+    if (!domain || !token || !locationId) {
+       return { success: false, error: "Credenciais ou SHOPIFY_LOCATION_ID ausente na Vercel." };
+    }
 
     try {
       const mutation = `
@@ -120,15 +123,19 @@ export class ShopifyService {
 
       const adjustData = await adjustRes.json();
       
-      if (adjustData?.data?.inventoryAdjustQuantity?.userErrors?.length > 0) {
-        console.error("Erro ao ajustar na Shopify:", adjustData.data.inventoryAdjustQuantity.userErrors);
-        return false;
+      if (adjustData.errors) {
+        return { success: false, error: adjustData.errors[0]?.message || "GraphQL Auth Error" };
       }
 
-      return true;
-    } catch (error) {
+      if (adjustData?.data?.inventoryAdjustQuantity?.userErrors?.length > 0) {
+        console.error("Erro ao ajustar na Shopify:", adjustData.data.inventoryAdjustQuantity.userErrors);
+        return { success: false, error: adjustData.data.inventoryAdjustQuantity.userErrors[0].message };
+      }
+
+      return { success: true };
+    } catch (error: any) {
       console.error("Erro na comunicação para ajuste por ID:", error);
-      return false;
+      return { success: false, error: error.message };
     }
   }
 

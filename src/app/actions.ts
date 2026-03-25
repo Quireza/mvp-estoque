@@ -176,15 +176,17 @@ export async function syncProductToShopifyAction(productId: string) {
     
     // Calcula saldo total e sincroniza o saldo inicial na loja sem delay de indexação!
     const totalQuantity = product.batches.reduce((sum, batch) => sum + batch.quantity, 0);
-    
+    let warningMsg = undefined;
+
     if (totalQuantity > 0 && result.inventoryItemIdGid) {
       const adjustOk = await ShopifyService.adjustInventoryByItemId(result.inventoryItemIdGid, totalQuantity);
-      if (!adjustOk) {
+      if (!adjustOk.success) {
          console.warn("Produto criado, mas erro ao forçar a quantidade pelo ID.");
+         warningMsg = `Produto criado com sucesso na Shopify, mas o saldo de estoque falhou: ${adjustOk.error}`;
       }
     }
 
-    return { success: true };
+    return { success: true, warning: warningMsg };
   } catch (err: any) {
     return { success: false, error: err.message || 'Erro desconhecido.' };
   }

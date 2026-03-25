@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 export default function ProductsTable({ initialProducts }: { initialProducts: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [isPending, startTransition] = useTransition();
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'name', direction: 'asc' });
 
   // 1. Filter
@@ -46,16 +46,21 @@ export default function ProductsTable({ initialProducts }: { initialProducts: an
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
 
-  const handleSyncShopify = (productId: string) => {
-    startTransition(async () => {
-      const toastId = toast.loading('Sincronizando com a Shopify...');
-      const res = await syncProductToShopifyAction(productId);
-      if (res.success) {
-        toast.success('Produto criado na Shopify!', { id: toastId });
+  const handleSyncShopify = async (productId: string) => {
+    setSyncingId(productId);
+    const toastId = toast.loading('Sincronizando com a Shopify...');
+    const res = await syncProductToShopifyAction(productId);
+    setSyncingId(null);
+    
+    if (res.success) {
+      if (res.warning) {
+        toast.warning(res.warning, { id: toastId, duration: 6000 });
       } else {
-        toast.error(`Erro: ${res.error}`, { id: toastId });
+        toast.success('Produto e estoque sincronizados na Shopify!', { id: toastId });
       }
-    });
+    } else {
+      toast.error(`Erro: ${res.error}`, { id: toastId });
+    }
   };
 
   return (
@@ -153,11 +158,11 @@ export default function ProductsTable({ initialProducts }: { initialProducts: an
                     <div className="flex items-center justify-end gap-2">
                        <button 
                          onClick={() => handleSyncShopify(product.id)}
-                         disabled={isPending}
+                         disabled={syncingId !== null}
                          className="inline-flex items-center justify-center px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 disabled:opacity-50 border border-emerald-200 text-sm font-medium rounded-lg transition-colors"
                          title="Enviar produto para a loja virtual Shopify"
                        >
-                         {isPending ? 'Enviando...' : 'Sync Shopify'}
+                         {syncingId === product.id ? 'Enviando...' : 'Sync Shopify'}
                        </button>
                        <Link href={`/products/${product.id}/edit`} className="inline-flex items-center justify-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium rounded-lg transition-colors">
                          Editar
