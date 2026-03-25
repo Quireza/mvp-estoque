@@ -65,11 +65,28 @@ export class ShopifyService {
       const inventoryItemIdGid = data?.data?.products?.edges?.[0]?.node?.variants?.edges?.[0]?.node?.inventoryItem?.id;
 
       if (!inventoryItemIdGid) {
-        console.warn(`SKU ${sku} não encontrado na Shopify.`);
+        console.warn(`SKU ${sku} não encontrado na Shopify. Indexação pode estar pendente.`);
         return false;
       }
 
-      // 2. Ajustar o inventário usando a Mutation
+      return await this.adjustInventoryByItemId(inventoryItemIdGid, adjustQuantity);
+    } catch (error) {
+      console.error("Erro na comunicação com Shopify API:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Executa a Mutation de ajuste de inventário diretamente pelo ID global
+   */
+  static async adjustInventoryByItemId(inventoryItemIdGid: string, adjustQuantity: number) {
+    const domain = process.env.SHOPIFY_STORE_DOMAIN;
+    const token = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
+    const locationId = process.env.SHOPIFY_LOCATION_ID;
+
+    if (!domain || !token || !locationId) return false;
+
+    try {
       const mutation = `
         mutation inventoryAdjustQuantity($input: InventoryAdjustQuantityInput!) {
           inventoryAdjustQuantity(input: $input) {
@@ -84,7 +101,6 @@ export class ShopifyService {
         }
       `;
 
-      // adjustQuantity deve ser negativo para redução (Delta)
       const variables = {
         input: {
           inventoryItemId: inventoryItemIdGid,
@@ -111,7 +127,7 @@ export class ShopifyService {
 
       return true;
     } catch (error) {
-      console.error("Erro na comunicação com Shopify API:", error);
+      console.error("Erro na comunicação para ajuste por ID:", error);
       return false;
     }
   }
@@ -165,7 +181,14 @@ export class ShopifyService {
         };
       }
 
-      return { success: true };
+      // Obter o OID real retornado para não precisarmos pesquisar o SKU (que sofre delay de indexação)
+      const createdVariant = responseData.product?.variants?.[0];
+      const inventoryItemId = createdVariant?.inventory_item_id;
+
+      return { 
+        success: true, 
+        inventoryItemIdGid: inventoryItemId ? `gid://shopify/InventoryItem/${inventoryItemId}` : undefined 
+      };
     } catch (err: any) {
       console.error("Erro na comunicação para criar produto:", err);
       return { success: false, error: err.message || "Erro de rede ao conectar com Shopify" };

@@ -174,11 +174,14 @@ export async function syncProductToShopifyAction(productId: string) {
 
     if (!result.success) return { success: false, error: result.error || 'Falha na conexão com a loja.' };
     
-    // Calcula saldo total e sincroniza o saldo inicial na loja
+    // Calcula saldo total e sincroniza o saldo inicial na loja sem delay de indexação!
     const totalQuantity = product.batches.reduce((sum, batch) => sum + batch.quantity, 0);
-    if (totalQuantity > 0) {
-      // Delay it mildly just in case Shopify needs a sec to index the new variant
-      await ShopifyService.adjustInventory(product.sku, totalQuantity);
+    
+    if (totalQuantity > 0 && result.inventoryItemIdGid) {
+      const adjustOk = await ShopifyService.adjustInventoryByItemId(result.inventoryItemIdGid, totalQuantity);
+      if (!adjustOk) {
+         console.warn("Produto criado, mas erro ao forçar a quantidade pelo ID.");
+      }
     }
 
     return { success: true };
