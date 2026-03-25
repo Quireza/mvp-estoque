@@ -91,14 +91,15 @@ export class ShopifyService {
 
     try {
       const mutation = `
-        mutation inventoryAdjustQuantity($input: InventoryAdjustQuantityInput!) {
-          inventoryAdjustQuantity(input: $input) {
-            inventoryLevel {
-              available
-            }
+        mutation inventoryAdjustQuantities($input: InventoryAdjustQuantitiesInput!) {
+          inventoryAdjustQuantities(input: $input) {
             userErrors {
               field
               message
+            }
+            inventoryAdjustmentGroup {
+              createdAt
+              reason
             }
           }
         }
@@ -106,9 +107,15 @@ export class ShopifyService {
 
       const variables = {
         input: {
-          inventoryItemId: inventoryItemIdGid,
-          locationId: `gid://shopify/Location/${locationId}`,
-          availableDelta: adjustQuantity
+          name: "available",
+          reason: "correction",
+          changes: [
+            {
+              delta: adjustQuantity,
+              inventoryItemId: inventoryItemIdGid,
+              locationId: `gid://shopify/Location/${locationId}`
+            }
+          ]
         }
       };
 
@@ -127,9 +134,10 @@ export class ShopifyService {
         return { success: false, error: adjustData.errors[0]?.message || "GraphQL Auth Error" };
       }
 
-      if (adjustData?.data?.inventoryAdjustQuantity?.userErrors?.length > 0) {
-        console.error("Erro ao ajustar na Shopify:", adjustData.data.inventoryAdjustQuantity.userErrors);
-        return { success: false, error: adjustData.data.inventoryAdjustQuantity.userErrors[0].message };
+      const userErrors = adjustData?.data?.inventoryAdjustQuantities?.userErrors;
+      if (userErrors && userErrors.length > 0) {
+        console.error("Erro ao ajustar na Shopify:", userErrors);
+        return { success: false, error: userErrors[0].message };
       }
 
       return { success: true };
